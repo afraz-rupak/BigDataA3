@@ -1,3 +1,5 @@
+-- Datamart: Price Trends & Market Analysis
+-- Business view for analyzing pricing trends over time and across segments
 
 {{ config(
     materialized='view',
@@ -138,7 +140,7 @@ GROUP BY
     rt.room_category,
     pr.price_category,
     pr.market_segment
-HAVING COUNT(DISTINCT f.listing_id) >= 10  
+HAVING COUNT(DISTINCT f.listing_id) >= 10  -- Minimum sample size for reliable trends
 ORDER BY
     d.year_month,
     l.region,

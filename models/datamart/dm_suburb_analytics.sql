@@ -1,3 +1,5 @@
+-- Datamart: Suburb Analytics
+-- Business view for analyzing market dynamics at suburb/neighbourhood level
 
 {{ config(
     materialized='view',
@@ -21,7 +23,7 @@ property_dim AS (
 )
 
 SELECT
-    
+    -- Geographic Identifiers
     l.neighbourhood,
     l.lga_name,
     l.region,
@@ -90,12 +92,12 @@ SELECT
         ELSE 'Low Demand'
     END AS demand_level,
     
-    
+    -- Competitiveness Score (0-100)
     ROUND(
         (
-            (AVG(f.occupancy_rate_30d) / 100.0 * 40) +  
-            (LEAST(AVG(f.review_scores_rating) / 5.0, 1) * 30) +  
-            (LEAST(COUNT(DISTINCT f.listing_id)::DECIMAL / 200, 1) * 30)  
+            (AVG(f.occupancy_rate_30d) / 100.0 * 40) +  -- 40% weight on occupancy
+            (LEAST(AVG(f.review_scores_rating) / 5.0, 1) * 30) +  -- 30% weight on rating
+            (LEAST(COUNT(DISTINCT f.listing_id)::DECIMAL / 200, 1) * 30)  -- 30% weight on supply
         ) * 100,
         2
     ) AS market_competitiveness_score,
@@ -112,4 +114,4 @@ GROUP BY
     l.lga_name,
     l.region,
     l.metro_regional
-HAVING COUNT(DISTINCT f.listing_id) >= 5  
+HAVING COUNT(DISTINCT f.listing_id) >= 5  -- Only include suburbs with at least 5 listings

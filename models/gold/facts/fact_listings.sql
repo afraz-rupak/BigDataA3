@@ -1,4 +1,4 @@
--- Gold Layer
+-- Gold Layer: Listings Fact Table
 
 {{ config(
     materialized='table',
@@ -9,7 +9,7 @@ WITH listings AS (
     SELECT * FROM {{ ref('stg_listings') }}
 ),
 
-
+-- Import all dimension keys
 dim_host AS (SELECT host_key, host_id FROM {{ ref('dim_host') }} WHERE is_current),
 dim_property AS (SELECT property_key, listing_id FROM {{ ref('dim_property') }}),
 dim_location AS (SELECT location_key, listing_id FROM {{ ref('dim_location') }}),
@@ -27,7 +27,6 @@ dim_room_type AS (SELECT room_type_key, room_type FROM {{ ref('dim_room_type') }
 dim_property_type AS (SELECT property_type_key, property_type FROM {{ ref('dim_property_type') }}),
 dim_neighbourhood AS (SELECT neighbourhood_key, neighbourhood_name FROM {{ ref('dim_neighbourhood') }}),
 dim_capacity AS (SELECT capacity_key, listing_id FROM {{ ref('dim_capacity') }}),
-dim_booking_rules AS (SELECT booking_rules_key, listing_id FROM {{ ref('dim_booking_rules') }}),
 dim_listing_age AS (SELECT listing_age_key, listing_id FROM {{ ref('dim_listing_age') }}),
 
 -- Get LGA code from location for census join
@@ -39,11 +38,14 @@ location_lga AS (
 )
 
 SELECT
+    -- Fact Table Surrogate Key
     {{ dbt_utils.generate_surrogate_key(['l.listing_id', 'l.scraped_date']) }} AS listing_fact_key,
     
+    -- Natural Keys
     l.listing_id,
     l.scraped_date,
     
+    -- Dimension Foreign Keys
     dh.host_key,
     dp.property_key,
     dl.location_key,
@@ -56,51 +58,40 @@ SELECT
     dpt.property_type_key,
     dn.neighbourhood_key,
     dcap.capacity_key,
-    dbr.booking_rules_key,
     dla.listing_age_key,
     
+    -- Measures (Facts)
     l.price AS nightly_price,
     l.accommodates,
-    l.minimum_nights,
-    l.maximum_nights,
     
+    -- Availability Measures
     l.availability_30,
-    l.availability_60,
-    l.availability_90,
-    l.availability_365,
     l.occupancy_rate_30d,
     
+    -- Review Measures
     l.number_of_reviews,
-    l.number_of_reviews_ltm,
-    l.number_of_reviews_l30d,
     l.review_scores_rating,
     l.review_scores_accuracy,
     l.review_scores_cleanliness,
     l.review_scores_checkin,
     l.review_scores_communication,
-    l.review_scores_location,
     l.review_scores_value,
     
+    -- Calculated Measures
     l.price_per_person,
     
+    -- Estimated Revenue (30-day only)
     CASE
         WHEN l.availability_30 < 30 AND l.price > 0
         THEN l.price * (30 - l.availability_30)
         ELSE 0
     END AS estimated_revenue_30d,
     
-    CASE
-        WHEN l.availability_365 < 365 AND l.price > 0
-        THEN l.price * (365 - l.availability_365)
-        ELSE 0
-    END AS estimated_revenue_annual,
-    
+    -- Quality Flags
     l.data_quality_flag,
     l.has_availability,
     
-    l.latitude,
-    l.longitude,
-    
+    -- Audit
     l.dbt_loaded_at AS source_loaded_at,
     CURRENT_TIMESTAMP AS fact_loaded_at
     
@@ -118,7 +109,6 @@ LEFT JOIN dim_room_type drt ON l.room_type = drt.room_type
 LEFT JOIN dim_property_type dpt ON l.property_type = dpt.property_type
 LEFT JOIN dim_neighbourhood dn ON l.neighbourhood_cleansed = dn.neighbourhood_name
 LEFT JOIN dim_capacity dcap ON l.listing_id = dcap.listing_id
-LEFT JOIN dim_booking_rules dbr ON l.listing_id = dbr.listing_id
 LEFT JOIN dim_listing_age dla ON l.listing_id = dla.listing_id
 
-WHERE l.data_quality_flag = 'VALID'  
+WHERE l.data_quality_flag = 'VALID'  -- Only include valid records in fact table

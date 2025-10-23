@@ -3,7 +3,7 @@ assignment3:
   outputs:
     dev:
       type: postgres
-      host: 34.72.133.200
+      host: 34.233.79.135
       port: 5432
       user: postgres
       password: Afraz13252@
