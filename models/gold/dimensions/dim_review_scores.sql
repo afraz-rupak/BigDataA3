@@ -13,13 +13,8 @@ WITH listing_reviews AS (
         review_scores_cleanliness,
         review_scores_checkin,
         review_scores_communication,
-        review_scores_location,
         review_scores_value,
-        number_of_reviews,
-        number_of_reviews_ltm,
-        number_of_reviews_l30d,
-        first_review,
-        last_review
+        number_of_reviews
     FROM {{ ref('stg_listings') }}
 )
 
@@ -36,30 +31,10 @@ SELECT
     COALESCE(review_scores_cleanliness, 0) AS cleanliness_rating,
     COALESCE(review_scores_checkin, 0) AS checkin_rating,
     COALESCE(review_scores_communication, 0) AS communication_rating,
-    COALESCE(review_scores_location, 0) AS location_rating,
     COALESCE(review_scores_value, 0) AS value_rating,
     
     -- Review Counts
     COALESCE(number_of_reviews, 0) AS total_reviews,
-    COALESCE(number_of_reviews_ltm, 0) AS reviews_last_12_months,
-    COALESCE(number_of_reviews_l30d, 0) AS reviews_last_30_days,
-    
-    -- Review Dates
-    first_review AS first_review_date,
-    last_review AS last_review_date,
-    
-    -- Calculated Metrics
-    CASE
-        WHEN last_review IS NOT NULL AND first_review IS NOT NULL
-        THEN DATE_PART('day', last_review - first_review)::INTEGER
-        ELSE NULL
-    END AS days_since_first_review,
-    
-    CASE
-        WHEN last_review IS NOT NULL
-        THEN DATE_PART('day', CURRENT_DATE - last_review)::INTEGER
-        ELSE NULL
-    END AS days_since_last_review,
     
     -- Average across all dimensions
     CASE
@@ -68,8 +43,7 @@ SELECT
              COALESCE(review_scores_cleanliness, 0) + 
              COALESCE(review_scores_checkin, 0) + 
              COALESCE(review_scores_communication, 0) + 
-             COALESCE(review_scores_location, 0) + 
-             COALESCE(review_scores_value, 0)) / 6.0
+             COALESCE(review_scores_value, 0)) / 5.0
         ELSE 0
     END AS avg_dimension_score,
     
@@ -92,25 +66,11 @@ SELECT
         ELSE 'Highly Reviewed (50+)'
     END AS review_volume_category,
     
-    -- Review Recency
-    CASE
-        WHEN last_review IS NULL THEN 'Never Reviewed'
-        WHEN DATE_PART('day', CURRENT_DATE - last_review) <= 30 THEN 'Recent (Last 30 days)'
-        WHEN DATE_PART('day', CURRENT_DATE - last_review) <= 90 THEN 'Moderate (31-90 days)'
-        WHEN DATE_PART('day', CURRENT_DATE - last_review) <= 180 THEN 'Older (91-180 days)'
-        ELSE 'Stale (180+ days)'
-    END AS review_recency_category,
-    
     -- Quality Flags
     CASE
         WHEN review_scores_rating >= 4.5 AND number_of_reviews >= 10 THEN TRUE
         ELSE FALSE
     END AS is_high_quality,
-    
-    CASE
-        WHEN number_of_reviews >= 5 AND last_review >= CURRENT_DATE - INTERVAL '90 days' THEN TRUE
-        ELSE FALSE
-    END AS is_actively_reviewed,
     
     -- Audit
     CURRENT_TIMESTAMP AS dbt_loaded_at

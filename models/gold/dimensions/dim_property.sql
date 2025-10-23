@@ -10,13 +10,7 @@ WITH listing_properties AS (
         listing_id,
         property_type,
         room_type,
-        accommodates,
-        bathrooms_text,
-        bedrooms,
-        beds,
-        minimum_nights,
-        maximum_nights,
-        instant_bookable
+        accommodates
     FROM {{ ref('stg_listings') }}
 )
 
@@ -33,14 +27,6 @@ SELECT
     
     -- Capacity
     COALESCE(accommodates, 0) AS accommodates,
-    COALESCE(bathrooms_text, 'Not specified') AS bathrooms_text,
-    COALESCE(bedrooms, 'Not specified') AS bedrooms,
-    COALESCE(beds, 'Not specified') AS beds,
-    
-    -- Booking Rules
-    COALESCE(minimum_nights, 1) AS minimum_nights,
-    COALESCE(maximum_nights, 365) AS maximum_nights,
-    COALESCE(instant_bookable, 'Unknown') AS instant_bookable,
     
     -- Property Categories
     CASE
@@ -69,20 +55,6 @@ SELECT
         WHEN accommodates <= 6 THEN 'Large (5-6)'
         ELSE 'Extra Large (7+)'
     END AS capacity_category,
-    
-    -- Booking Flexibility
-    CASE
-        WHEN minimum_nights = 1 THEN 'Flexible (1 night)'
-        WHEN minimum_nights <= 3 THEN 'Short Stay (2-3 nights)'
-        WHEN minimum_nights <= 7 THEN 'Weekly Min'
-        WHEN minimum_nights <= 30 THEN 'Monthly Min'
-        ELSE 'Long Term Only'
-    END AS minimum_stay_category,
-    
-    CASE
-        WHEN LOWER(instant_bookable) IN ('t', 'true') THEN TRUE
-        ELSE FALSE
-    END AS is_instant_bookable,
     
     -- Audit
     CURRENT_TIMESTAMP AS dbt_loaded_at

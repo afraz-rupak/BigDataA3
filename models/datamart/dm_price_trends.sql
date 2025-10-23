@@ -1,3 +1,5 @@
+-- Datamart: Price Trends & Market Analysis
+-- Business view for analyzing pricing trends over time and across segments
 
 {{ config(
     materialized='view',
@@ -12,20 +14,8 @@ date_dim AS (
     SELECT * FROM {{ ref('dim_date') }}
 ),
 
-price_dim AS (
-    SELECT * FROM {{ ref('dim_price') }}
-),
-
 location_dim AS (
     SELECT * FROM {{ ref('dim_location') }}
-),
-
-property_dim AS (
-    SELECT * FROM {{ ref('dim_property') }}
-),
-
-room_type_dim AS (
-    SELECT * FROM {{ ref('dim_room_type') }}
 )
 
 SELECT
@@ -43,13 +33,9 @@ SELECT
     l.region,
     l.metro_regional,
     
-    -- Property Segment
-    p.property_category,
-    rt.room_category,
-    
-    -- Price Segment
-    pr.price_category,
-    pr.market_segment,
+    -- Property Segment (using denormalized fields)
+    f.property_type,
+    f.room_type,
     
     -- Aggregated Metrics
     COUNT(DISTINCT f.listing_id) AS listing_count,
@@ -83,7 +69,7 @@ SELECT
     
     -- Review Performance
     AVG(f.review_scores_rating) AS avg_rating,
-    SUM(f.number_of_reviews_l30d) AS total_new_reviews,
+    SUM(f.number_of_reviews) AS total_reviews,
     
     -- Supply Metrics
     SUM(CASE WHEN f.has_availability THEN 1 ELSE 0 END) AS available_listings,
@@ -119,10 +105,7 @@ SELECT
     
 FROM fact f
 INNER JOIN date_dim d ON f.date_key = d.date_key
-INNER JOIN price_dim pr ON f.price_key = pr.price_key
 INNER JOIN location_dim l ON f.location_key = l.location_key
-INNER JOIN property_dim p ON f.property_key = p.property_key
-INNER JOIN room_type_dim rt ON f.room_type_key = rt.room_type_key
 GROUP BY
     d.year_month,
     d.year,
@@ -134,12 +117,10 @@ GROUP BY
     d.is_weekend,
     l.region,
     l.metro_regional,
-    p.property_category,
-    rt.room_category,
-    pr.price_category,
-    pr.market_segment
-HAVING COUNT(DISTINCT f.listing_id) >= 10  
+    f.property_type,
+    f.room_type
+HAVING COUNT(DISTINCT f.listing_id) >= 10  -- Minimum sample size for reliable trends
 ORDER BY
     d.year_month,
     l.region,
-    p.property_category
+    f.property_type

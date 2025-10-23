@@ -1,3 +1,5 @@
+-- Datamart: Suburb Analytics
+-- Business view for analyzing market dynamics at suburb/neighbourhood level
 
 {{ config(
     materialized='view',
@@ -14,14 +16,10 @@ location_dim AS (
 
 census_dim AS (
     SELECT * FROM {{ ref('dim_census_demographics') }}
-),
-
-property_dim AS (
-    SELECT * FROM {{ ref('dim_property') }}
 )
 
 SELECT
-    
+    -- Geographic Identifiers
     l.neighbourhood,
     l.lga_name,
     l.region,
@@ -32,10 +30,10 @@ SELECT
     COUNT(DISTINCT f.host_key) AS total_hosts,
     COUNT(DISTINCT f.listing_id)::DECIMAL / NULLIF(COUNT(DISTINCT f.host_key), 0) AS listings_per_host,
     
-    -- Property Mix
-    SUM(CASE WHEN p.room_category = 'Entire Place' THEN 1 ELSE 0 END) AS entire_place_count,
-    SUM(CASE WHEN p.room_category = 'Private Room' THEN 1 ELSE 0 END) AS private_room_count,
-    SUM(CASE WHEN p.room_category = 'Shared Room' THEN 1 ELSE 0 END) AS shared_room_count,
+    -- Property Mix (using denormalized fields from fact)
+    SUM(CASE WHEN f.room_type = 'Entire home/apt' THEN 1 ELSE 0 END) AS entire_place_count,
+    SUM(CASE WHEN f.room_type = 'Private room' THEN 1 ELSE 0 END) AS private_room_count,
+    SUM(CASE WHEN f.room_type = 'Shared room' THEN 1 ELSE 0 END) AS shared_room_count,
     
     -- Pricing Analysis
     AVG(f.nightly_price) AS avg_nightly_price,
@@ -54,7 +52,6 @@ SELECT
     -- Revenue Potential
     SUM(f.estimated_revenue_30d) AS total_estimated_revenue_30d,
     AVG(f.estimated_revenue_30d) AS avg_estimated_revenue_per_listing_30d,
-    SUM(f.estimated_revenue_annual) AS total_estimated_revenue_annual,
     
     -- Review Metrics
     AVG(f.review_scores_rating) AS avg_rating,
@@ -90,12 +87,12 @@ SELECT
         ELSE 'Low Demand'
     END AS demand_level,
     
-    
+    -- Competitiveness Score (0-100)
     ROUND(
         (
-            (AVG(f.occupancy_rate_30d) / 100.0 * 40) +  
-            (LEAST(AVG(f.review_scores_rating) / 5.0, 1) * 30) +  
-            (LEAST(COUNT(DISTINCT f.listing_id)::DECIMAL / 200, 1) * 30)  
+            (AVG(f.occupancy_rate_30d) / 100.0 * 40) +  -- 40% weight on occupancy
+            (LEAST(AVG(f.review_scores_rating) / 5.0, 1) * 30) +  -- 30% weight on rating
+            (LEAST(COUNT(DISTINCT f.listing_id)::DECIMAL / 200, 1) * 30)  -- 30% weight on supply
         ) * 100,
         2
     ) AS market_competitiveness_score,
@@ -105,11 +102,10 @@ SELECT
     
 FROM fact f
 INNER JOIN location_dim l ON f.location_key = l.location_key
-LEFT JOIN census_dim c ON l.lga_code = c.lga_code
-LEFT JOIN property_dim p ON f.property_key = p.property_key
+LEFT JOIN census_dim c ON f.demographics_key = c.demographics_key
 GROUP BY
     l.neighbourhood,
     l.lga_name,
     l.region,
     l.metro_regional
-HAVING COUNT(DISTINCT f.listing_id) >= 5  
+HAVING COUNT(DISTINCT f.listing_id) >= 5  -- Only include suburbs with at least 5 listings

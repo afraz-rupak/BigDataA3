@@ -8,9 +8,7 @@
 WITH listing_locations AS (
     SELECT DISTINCT
         listing_id,
-        neighbourhood_cleansed,
-        latitude,
-        longitude
+        neighbourhood_cleansed
     FROM {{ ref('stg_listings') }}
 ),
 
@@ -34,8 +32,6 @@ location_with_lga AS (
     SELECT
         l.listing_id,
         l.neighbourhood_cleansed,
-        l.latitude,
-        l.longitude,
         ls.lga_name,
         lga.lga_code,
         lga.region,
@@ -61,16 +57,7 @@ SELECT
     COALESCE(region, 'Unknown') AS region,
     COALESCE(metro_regional, 'Unknown') AS metro_regional,
     
-    -- Coordinates
-    latitude,
-    longitude,
-    
     -- Geographic Classifications
-    CASE
-        WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN 'Geocoded'
-        ELSE 'No Coordinates'
-    END AS geocode_status,
-    
     CASE
         WHEN metro_regional = 'Metropolitan' THEN 'Urban'
         WHEN metro_regional = 'Regional' THEN 'Regional'

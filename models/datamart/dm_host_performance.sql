@@ -1,3 +1,4 @@
+-- Datamart: Host Performance Analytics
 
 {{ config(
     materialized='view',
@@ -31,14 +32,12 @@ SELECT
     
     -- Performance Metrics
     SUM(f.estimated_revenue_30d) AS total_estimated_revenue_30d,
-    SUM(f.estimated_revenue_annual) AS total_estimated_revenue_annual,
     AVG(f.nightly_price) AS avg_nightly_price,
     AVG(f.occupancy_rate_30d) AS avg_occupancy_rate,
     
     -- Review Metrics
     h.avg_rating AS overall_avg_rating,
     SUM(f.number_of_reviews) AS total_reviews,
-    SUM(f.number_of_reviews_ltm) AS total_reviews_last_12months,
     AVG(f.review_scores_rating) AS avg_listing_rating,
     AVG(f.review_scores_cleanliness) AS avg_cleanliness_score,
     AVG(f.review_scores_communication) AS avg_communication_score,

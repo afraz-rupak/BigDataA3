@@ -6,7 +6,7 @@
 ) }}
 
 WITH host_snapshot AS (
-    SELECT *  FROM {{ ref('snapshot_host') }}
+    SELECT * FROM {{ ref('snapshot_host') }}
 ),
 
 latest_host AS (
@@ -27,9 +27,7 @@ host_metrics AS (
         COUNT(DISTINCT listing_id) AS total_listings,
         AVG(price) AS avg_listing_price,
         SUM(number_of_reviews) AS total_reviews,
-        AVG(review_scores_rating) AS avg_rating,
-        MIN(first_review) AS first_listing_review,
-        MAX(last_review) AS most_recent_review
+        AVG(review_scores_rating) AS avg_rating
     FROM {{ ref('stg_listings') }}
     WHERE host_id IS NOT NULL
     GROUP BY host_id
@@ -54,8 +52,6 @@ SELECT
     COALESCE(m.avg_listing_price, 0) AS avg_listing_price,
     COALESCE(m.total_reviews, 0) AS total_reviews,
     COALESCE(m.avg_rating, 0) AS avg_rating,
-    m.first_listing_review,
-    m.most_recent_review,
     
     -- Host Classification
     CASE

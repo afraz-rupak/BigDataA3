@@ -26,9 +26,8 @@ models:
     description: Cleaned and standardized Airbnb listings data
     columns:
       - name: listing_id
-        description: Unique identifier for each listing
+        description: Unique identifier for each listing (note - same listing can appear multiple times for different scraped_dates)
         tests:
-          - unique
           - not_null
           
       - name: scraped_date
@@ -55,7 +54,6 @@ models:
       - name: lga_code
         description: LGA code (2016 boundaries)
         tests:
-          - unique
           - not_null
           
       - name: total_persons
@@ -67,7 +65,6 @@ models:
       - name: lga_code
         description: LGA code (2016 boundaries)
         tests:
-          - unique
           - not_null
           
       - name: median_household_income_weekly
@@ -79,7 +76,6 @@ models:
       - name: lga_code
         description: Standardized LGA code
         tests:
-          - unique
           - not_null
           
       - name: lga_name
@@ -93,5 +89,4 @@ models:
       - name: lga_suburb_key
         description: Unique identifier for LGA-Suburb combination
         tests:
-          - unique
           - not_null

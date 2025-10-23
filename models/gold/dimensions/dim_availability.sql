@@ -9,35 +9,30 @@ WITH listing_availability AS (
     SELECT DISTINCT
         listing_id,
         has_availability,
-        availability_30,
-        availability_60,
-        availability_90,
-        availability_365
+        availability_30
     FROM {{ ref('stg_listings') }}
 )
 
 SELECT
+    -- Surrogate Key
     {{ dbt_utils.generate_surrogate_key(['listing_id']) }} AS availability_key,
     
+    -- Natural Key
     listing_id,
     
+    -- Availability Flags
     has_availability,
     
+    -- Days Available (only 30-day available)
     COALESCE(availability_30, 0) AS days_available_30,
-    COALESCE(availability_60, 0) AS days_available_60,
-    COALESCE(availability_90, 0) AS days_available_90,
-    COALESCE(availability_365, 0) AS days_available_365,
     
+    -- Availability Percentage
     ROUND((COALESCE(availability_30, 0)::DECIMAL / 30.0) * 100, 2) AS availability_pct_30,
-    ROUND((COALESCE(availability_60, 0)::DECIMAL / 60.0) * 100, 2) AS availability_pct_60,
-    ROUND((COALESCE(availability_90, 0)::DECIMAL / 90.0) * 100, 2) AS availability_pct_90,
-    ROUND((COALESCE(availability_365, 0)::DECIMAL / 365.0) * 100, 2) AS availability_pct_365,
     
+    -- Occupancy Rate (inverse of availability)
     ROUND(((30.0 - COALESCE(availability_30, 0)) / 30.0) * 100, 2) AS occupancy_rate_30,
-    ROUND(((60.0 - COALESCE(availability_60, 0)) / 60.0) * 100, 2) AS occupancy_rate_60,
-    ROUND(((90.0 - COALESCE(availability_90, 0)) / 90.0) * 100, 2) AS occupancy_rate_90,
-    ROUND(((365.0 - COALESCE(availability_365, 0)) / 365.0) * 100, 2) AS occupancy_rate_365,
     
+    -- Availability Categories (30-day)
     CASE
         WHEN NOT has_availability THEN 'Not Available'
         WHEN availability_30 = 0 THEN 'Fully Booked'
@@ -47,6 +42,7 @@ SELECT
         ELSE 'Fully Available (26-30 days)'
     END AS availability_category_30,
     
+    -- Occupancy Categories (30-day)
     CASE
         WHEN ((30.0 - COALESCE(availability_30, 0)) / 30.0) * 100 >= 80 THEN 'High Occupancy (80%+)'
         WHEN ((30.0 - COALESCE(availability_30, 0)) / 30.0) * 100 >= 60 THEN 'Good Occupancy (60-79%)'
@@ -55,6 +51,7 @@ SELECT
         ELSE 'Very Low Occupancy (<20%)'
     END AS occupancy_category_30,
     
+    -- Market Activity Flags
     CASE
         WHEN has_availability AND availability_30 < 30 THEN TRUE
         ELSE FALSE
@@ -66,10 +63,11 @@ SELECT
     END AS is_fully_booked_30,
     
     CASE
-        WHEN availability_365 >= 330 THEN TRUE
+        WHEN availability_30 >= 28 THEN TRUE
         ELSE FALSE
     END AS is_rarely_booked,
     
+    -- Audit
     CURRENT_TIMESTAMP AS dbt_loaded_at
     
 FROM listing_availability
