@@ -1,0 +1,13 @@
+assignment3:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: 34.72.133.200
+      port: 5432
+      user: postgres
+      password: Afraz13252@
+      dbname: postgres
+      schema: silver
+      threads: 4
+      keepalives_idle: 0
