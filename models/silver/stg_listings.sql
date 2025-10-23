@@ -46,6 +46,7 @@ cleaned AS (
         -- Reviews
         COALESCE(NUMBER_OF_REVIEWS, 0)::INTEGER AS number_of_reviews,
         
+<<<<<<< HEAD
         -- Review Scores (using DECIMAL(5, 2) to handle scores up to 100)
         COALESCE(REVIEW_SCORES_RATING, 0)::DECIMAL(5, 2) AS review_scores_rating,
         COALESCE(REVIEW_SCORES_ACCURACY, 0)::DECIMAL(5, 2) AS review_scores_accuracy,
@@ -53,6 +54,15 @@ cleaned AS (
         COALESCE(REVIEW_SCORES_CHECKIN, 0)::DECIMAL(5, 2) AS review_scores_checkin,
         COALESCE(REVIEW_SCORES_COMMUNICATION, 0)::DECIMAL(5, 2) AS review_scores_communication,
         COALESCE(REVIEW_SCORES_VALUE, 0)::DECIMAL(5, 2) AS review_scores_value,
+=======
+        -- Review Scores (only available columns)
+        COALESCE(REVIEW_SCORES_RATING, 0)::DECIMAL(4, 2) AS review_scores_rating,
+        COALESCE(REVIEW_SCORES_ACCURACY, 0)::DECIMAL(4, 2) AS review_scores_accuracy,
+        COALESCE(REVIEW_SCORES_CLEANLINESS, 0)::DECIMAL(4, 2) AS review_scores_cleanliness,
+        COALESCE(REVIEW_SCORES_CHECKIN, 0)::DECIMAL(4, 2) AS review_scores_checkin,
+        COALESCE(REVIEW_SCORES_COMMUNICATION, 0)::DECIMAL(4, 2) AS review_scores_communication,
+        COALESCE(REVIEW_SCORES_VALUE, 0)::DECIMAL(4, 2) AS review_scores_value,
+>>>>>>> d04b35a9d5928706da30a7737ddd68540c07c4e4
         
         -- Calculated Metrics
         CASE 

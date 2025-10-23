@@ -117,8 +117,15 @@ GROUP BY
     d.is_weekend,
     l.region,
     l.metro_regional,
+<<<<<<< HEAD
     f.property_type,
     f.room_type
+=======
+    p.property_category,
+    rt.room_category,
+    pr.price_category,
+    pr.market_segment
+>>>>>>> d04b35a9d5928706da30a7737ddd68540c07c4e4
 HAVING COUNT(DISTINCT f.listing_id) >= 10  -- Minimum sample size for reliable trends
 ORDER BY
     d.year_month,

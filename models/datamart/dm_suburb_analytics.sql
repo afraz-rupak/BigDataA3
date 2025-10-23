@@ -108,4 +108,8 @@ GROUP BY
     l.lga_name,
     l.region,
     l.metro_regional
+<<<<<<< HEAD
 HAVING COUNT(DISTINCT f.listing_id) >= 5  -- Only include suburbs with at least 5 listings
+=======
+HAVING COUNT(DISTINCT f.listing_id) >= 5  -- Only include suburbs with at least 5 listings
+>>>>>>> d04b35a9d5928706da30a7737ddd68540c07c4e4
